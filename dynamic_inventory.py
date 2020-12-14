@@ -20,6 +20,10 @@ ip_block_start = {"deployment": 10, "lb": 20, "controller": 30,
         "compute": 40, "network": 50, "ceph": 60, "cinder": 70,
         "swift": 80, "logging": 90, "nfs": 100}
 
+"""Host types defined in Vagrantfile"""
+hosts_types = ['deployment', 'lb', 'controller', 'compute', 'network', 'ceph', 
+        'cinder', 'swift', 'logging', 'nfs']
+
 """
 This function will return a sublist of the list hosts. All the hosts whose name
 contains the string name will be added to such sublist and remove from hosts.
@@ -73,13 +77,20 @@ def create_group(host_list, host_type, inventory):
         inventory[group_name]['hosts'].append(host.name)
 
     return inventory
+
+def create_static_groups(inventory):
+
+    static_groups = json.loads('{ "infrastructure_nodes": {} }' )
+    static_groups['infrastructure_nodes'].update({ "children": [ ] })
     
+    for i in range(1, len(hosts_types)):
+        static_groups['infrastructure_nodes']['children'].append( hosts_types[i] + '_nodes' )
+
+    inventory.update( static_groups )
+
+    return inventory
 
 def create_dynamic_inventory(inventory):
-
-    """Host types defined in Vagrantfile"""
-    hosts_types = ['deployment', 'lb', 'controller', 'compute', 'network', 'ceph', 
-            'cinder', 'swift', 'logging', 'nfs']
 
     """Get the list of Vagramt instances"""
     v = vagrant.Vagrant()
@@ -93,6 +104,9 @@ def create_dynamic_inventory(inventory):
         if len(host_list) > 0:
             inventory = create_hostvars(host_list, host_type, inventory)
             inventory = create_group(host_list, host_type, inventory)
+
+    """Create static groups"""
+    inventory = create_static_groups(inventory)
 
     return inventory
 
