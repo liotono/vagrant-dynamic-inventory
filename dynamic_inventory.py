@@ -33,9 +33,13 @@ name: the type of host (ceph, swift, compute, etc.)
 def get_hosts_sublist(hosts, name):
     hosts_sublist = []
 
-    for i in range(0,len(hosts)-1):
-        if hosts[i].name.find(name) != -1:
-            hosts_sublist.append(hosts[i])
+    # for i in range(0,len(hosts)-1):
+    #     if hosts[i].name.find(name) != -1:
+    #         hosts_sublist.append(hosts[i])
+
+    for host in hosts:
+        if host.name.find(name) != -1:
+            hosts_sublist.append(host)
 
     return hosts_sublist
 
