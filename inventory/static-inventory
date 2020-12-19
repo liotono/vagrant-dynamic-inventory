@@ -1,0 +1,6 @@
+
+[deployment_nodes]
+upgrade-controller00
+
+[lvm_nodes:children]
+cinder_nodes

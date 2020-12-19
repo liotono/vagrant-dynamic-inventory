@@ -1,0 +1,6 @@
+
+ansible_user: vagrant
+ansible_password: vagrant
+ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+python2_version: yes
+add_swap_to_hosts: no
