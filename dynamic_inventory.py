@@ -9,33 +9,19 @@ import vagrant
 import argparse
 import json
 
-"""
-Global variables that need to be modified based on the enviroment
-"""
-ip_brmgmt = "172.29.236."
-ip_brvxlan = "172.29.240."
-ip_brstorage = "172.29.244."
-ip_public = "192.168.15."
-ip_block_start = {"deployment": 10, "lb": 20, "controller": 30,
-        "compute": 40, "network": 50, "ceph": 60, "cinder": 70,
-        "swift": 80, "logging": 90, "nfs": 100}
-
 """Host types defined in Vagrantfile"""
 hosts_types = ['deployment', 'lb', 'controller', 'compute', 'network', 'ceph', 
         'cinder', 'swift', 'logging', 'nfs']
 
 """
-This function will return a sublist of the list hosts. All the hosts whose name
-contains the string name will be added to such sublist and remove from hosts.
-hosts: a list returned by the function Vagrant.status()
-name: the type of host (ceph, swift, compute, etc.)
+This function will return a sub-list of the hosts. All hosts whose name
+contains the string name will be added to such sublist.
+Arguments:
+    hosts: A list returned by the function Vagrant.status()
+    name: the type of host (ceph, swift, compute, etc.)
 """
 def get_hosts_sublist(hosts, name):
     hosts_sublist = []
-
-    # for i in range(0,len(hosts)-1):
-    #     if hosts[i].name.find(name) != -1:
-    #         hosts_sublist.append(hosts[i])
 
     for host in hosts:
         if host.name.find(name) != -1:
@@ -43,37 +29,15 @@ def get_hosts_sublist(hosts, name):
 
     return hosts_sublist
 
-
-"""v = vagrant.Vagrant()
-hosts_list = v.status()
-ceph_list = get_hosts_sublist(hosts_list, 'ceph')
 """
-
+This function will create a group of hosts whose name
+matches the pattern given by host_type
+Arguments:
+    host_list: List of hosts returned by Vagrant.status()
+    inventory: Ansible inventory being created
+    group_name: Group to be created
 """
-_inventory.update({ "ceph_nodes": {} })
-_inventory['_meta']['hostvars'].update({ "ceph00": {} })
-_inventory['_meta']['hostvars']["ceph00"].update({ "var2": 4 })
-_inventory['_meta']['hostvars'].update({ "ceph01": {} })
-"""
-
-def create_hostvars(host_list, host_type, inventory):
-
-    ip_start = ip_block_start[host_type]
-
-    for host in host_list:
-        inventory['_meta']['hostvars'].update({ host.name: {} })
-        inventory['_meta']['hostvars'][host.name].update( { "ip_brmgmt": ip_brmgmt + str(ip_start) } )
-        inventory['_meta']['hostvars'][host.name].update( { "ip_brvxlan": ip_brvxlan + str(ip_start) } )
-        inventory['_meta']['hostvars'][host.name].update( { "ip_brstorage": ip_brstorage + str(ip_start) } )
-        inventory['_meta']['hostvars'][host.name].update( { "ip_public": ip_public + str(ip_start) } )
-        inventory['_meta']['hostvars'][host.name].update( { "ansible_host": host.name } )
-        ip_start += 1
-
-    return inventory
-
-def create_group(host_list, host_type, inventory):
-
-    group_name = host_type + '_nodes'
+def create_group(host_list, inventory, group_name):
 
     inventory.update({ group_name : { "hosts": [] } })
 
@@ -82,45 +46,37 @@ def create_group(host_list, host_type, inventory):
 
     return inventory
 
-def create_static_groups(inventory):
-
-    static_groups = json.loads('{ "infrastructure_nodes": {} }' )
-    static_groups['infrastructure_nodes'].update({ "children": [ ] })
-    
-    for i in range(1, len(hosts_types)):
-        static_groups['infrastructure_nodes']['children'].append( hosts_types[i] + '_nodes' )
-
-    inventory.update( static_groups )
-
-    return inventory
-
 def create_dynamic_inventory(inventory):
 
-    """Get the list of Vagramt instances"""
+    """ Get the list of Vagrant instances """
     v = vagrant.Vagrant()
     hosts_vagrant_list = v.status()
 
-    """Add the hostvars object to the inventory"""
-    inventory['_meta'].update({ "hostvars": {} })
-
+    """
+    Based on every host type defined in hosts_types, we collect
+    hosts from the list of instances returned by Vagrant and create an
+    ansible group
+    """
     for host_type in hosts_types:
         host_list = get_hosts_sublist(hosts_vagrant_list, host_type)
         if len(host_list) > 0:
-            inventory = create_hostvars(host_list, host_type, inventory)
-            inventory = create_group(host_list, host_type, inventory)
+            inventory = create_group(host_list, inventory,
+                    host_type + "_nodes" )
 
-    """Create static groups"""
-    inventory = create_static_groups(inventory)
+    """ Now we add every host to the all group """
+    inventory = create_group(hosts_vagrant_list, inventory, "all")
 
     return inventory
 
 def dynamic_inventory(args):
+    """ Create an empty inventory """
+    inventory = json.loads('{ "_meta": { "hostvars": {} } }')
 
-    inventory = json.loads('{ "_meta" : {} }')
-
+    """ When the script is invoked with the option --list """
     if args.list:
         inventory = create_dynamic_inventory(inventory)
 
+    """ Print the inventory to the standar output """
     print(json.dumps(inventory, indent=4))
 
 if __name__ == "__main__":
