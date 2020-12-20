@@ -14,11 +14,11 @@ hosts_types = ['deployment', 'lb', 'controller', 'compute', 'network', 'ceph',
         'cinder', 'swift', 'logging', 'nfs']
 
 """
-This function will return a sub-list of the hosts. All hosts whose name
+This function will return a sub-list of hosts. All hosts whose name
 contains the string name will be added to such sublist.
 Arguments:
     hosts: A list returned by the function Vagrant.status()
-    name: the type of host (ceph, swift, compute, etc.)
+    name: The type of host (ceph, swift, compute, etc.)
 """
 def get_hosts_sublist(hosts, name):
     hosts_sublist = []
@@ -30,8 +30,8 @@ def get_hosts_sublist(hosts, name):
     return hosts_sublist
 
 """
-This function will create a group of hosts whose name
-matches the pattern given by host_type
+This function will create an ansible group from the host list
+provided.
 Arguments:
     host_list: List of hosts returned by Vagrant.status()
     inventory: Ansible inventory being created
